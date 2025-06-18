@@ -16,7 +16,7 @@ import "./index.css";
 
 const App: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  
+
   const {
     bracketData,
     jsonInput,
@@ -30,6 +30,17 @@ const App: React.FC = () => {
     updateXSpacing,
     updateYSpacing,
     toggleRoundedLinks,
+    updateNodeGap,
+    updateWinnerBackgroundColor,
+    updateWinnerBorderColor,
+    updateLoserBackgroundColor,
+    updateLoserBorderColor,
+    updateBorderWidth,
+    updateCornerRadius,
+    updateNodeWidth,
+    updateNodeHeight,
+    updateBackgroundColor,
+    updateCanvasBackgroundColor,
   } = useBracketSettings();
 
   const handleUpdateBracket = () => {
@@ -57,8 +68,19 @@ const App: React.FC = () => {
               onXSpacingChange={updateXSpacing}
               onYSpacingChange={updateYSpacing}
               onRoundedLinksToggle={toggleRoundedLinks}
+              onNodeGapChange={updateNodeGap}
+              onWinnerBackgroundColorChange={updateWinnerBackgroundColor}
+              onWinnerBorderColorChange={updateWinnerBorderColor}
+              onLoserBackgroundColorChange={updateLoserBackgroundColor}
+              onLoserBorderColorChange={updateLoserBorderColor}
+              onBorderWidthChange={updateBorderWidth}
+              onCornerRadiusChange={updateCornerRadius}
+              onNodeWidthChange={updateNodeWidth}
+              onNodeHeightChange={updateNodeHeight}
+              onBackgroundColorChange={updateBackgroundColor}
+              onCanvasBackgroundColorChange={updateCanvasBackgroundColor}
             />
-            
+
             <DataEditor
               jsonInput={jsonInput}
               onJsonChange={updateJsonInput}

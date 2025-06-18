@@ -2,13 +2,67 @@
  * D3.js rendering service for bracket visualization
  */
 
-import * as d3 from 'd3';
-import type { Match, BracketSettings, HierarchyNode } from '../types/bracket.types';
-import { 
-  flipCoordinates, 
-  extractUniqueRoundLabels, 
-} from '../utils/bracketHelpers';
-import { createLinks, createNodes, createRoundLabels } from './d3Components';
+import * as d3 from "d3";
+import type {
+  Match,
+  BracketSettings,
+  HierarchyNode,
+} from "../types/bracket.types";
+import {
+  flipCoordinates,
+  extractUniqueRoundLabels,
+} from "../utils/bracketHelpers";
+import {
+  createLinks,
+  createNodes,
+  createRoundLabels,
+  createMatchTags,
+} from "./d3Components";
+
+/**
+ * Ensures uniform spacing between all leaf nodes
+ */
+const adjustLeafNodeSpacing = (
+  treeData: HierarchyNode,
+  ySpacing: number
+): void => {
+  // Get all leaf nodes (nodes with no children)
+  const leafNodes = treeData
+    .descendants()
+    .filter((d) => !d.children || d.children.length === 0);
+
+  if (leafNodes.length <= 1) return;
+
+  // Sort leaf nodes by their current x position (vertical position in our flipped coordinate system)
+  leafNodes.sort((a, b) => a.x - b.x);
+
+  // Calculate the range needed for uniform spacing
+  const totalHeight = (leafNodes.length - 1) * ySpacing;
+  const startY = -totalHeight / 2;
+
+  // Assign uniform positions to leaf nodes
+  leafNodes.forEach((node, index) => {
+    node.x = startY + index * ySpacing;
+  });
+
+  // Now we need to adjust the positions of internal nodes to maintain proper tree structure
+  // We'll do this by recursively positioning internal nodes at the center of their children
+  const adjustInternalNodes = (node: HierarchyNode): void => {
+    if (node.children && node.children.length > 0) {
+      // First, recursively adjust all children
+      node.children.forEach((child) =>
+        adjustInternalNodes(child as HierarchyNode)
+      );
+
+      // Then position this node at the center of its children
+      const childXs = node.children.map((child) => (child as HierarchyNode).x);
+      node.x = (Math.min(...childXs) + Math.max(...childXs)) / 2;
+    }
+  };
+
+  // Adjust all internal nodes starting from the root
+  adjustInternalNodes(treeData);
+};
 
 export const renderBracketTree = (
   svgElement: SVGSVGElement,
@@ -22,8 +76,13 @@ export const renderBracketTree = (
 
   // Create hierarchy and layout
   const root = d3.hierarchy(bracketData[0], (d: Match) => d.children);
-  const treeLayout = d3.tree<Match>().nodeSize([settings.ySpacing, settings.xSpacing]);
+  const treeLayout = d3
+    .tree<Match>()
+    .nodeSize([settings.ySpacing, settings.xSpacing]);
   const treeData = treeLayout(root) as HierarchyNode;
+
+  // Adjust leaf node spacing to ensure uniform distribution
+  adjustLeafNodeSpacing(treeData, settings.ySpacing);
 
   // Flip coordinates for left-to-right layout
   flipCoordinates(treeData.descendants());
@@ -36,8 +95,23 @@ export const renderBracketTree = (
 
   // Render components
   createLinks(g, treeData, settings.roundedLinks);
-  createNodes(g, treeData, onMatchSelect);
-  
+  createNodes(
+    g,
+    treeData,
+    onMatchSelect,
+    settings.nodeGap,
+    settings.winnerBackgroundColor,
+    settings.winnerBorderColor,
+    settings.loserBackgroundColor,
+    settings.loserBorderColor,
+    settings.borderWidth,
+    settings.cornerRadius,
+    settings.nodeWidth,
+    settings.nodeHeight,
+    settings.backgroundColor
+  );
+  createMatchTags(g, treeData, 10, settings.nodeWidth);
+
   const rounds = treeData.height + 1;
   const roundLabels = extractUniqueRoundLabels(treeData.descendants(), rounds);
   createRoundLabels(g, treeData, roundLabels, rounds);
@@ -67,7 +141,7 @@ const setupZoom = (
     .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
       g.attr("transform", event.transform.toString());
     });
-  
+
   svg.call(zoom);
   return zoom;
 };
@@ -93,8 +167,8 @@ const initializeZoomPosition = (
   const scaleY = height / bounds.height;
   const scale = Math.min(scaleX, scaleY) * 0.8;
 
-  const x = -leftmostX * scale + 50;
-  const y = -topY * scale + 50;
+  const x = -leftmostX * scale + 100;
+  const y = -topY * scale + 100;
 
   if (currentScale === 1) {
     svg.call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));

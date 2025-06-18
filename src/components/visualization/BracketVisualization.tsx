@@ -2,10 +2,10 @@
  * Main bracket visualization component
  */
 
-import React, { useRef } from 'react';
-import type { Match, BracketSettings } from '../../types/bracket.types';
-import BracketSVG from './BracketSVG';
-import BracketLegend from './BracketLegend';
+import React, { useRef } from "react";
+import type { Match, BracketSettings } from "../../types/bracket.types";
+import BracketSVG from "./BracketSVG";
+import BracketLegend from "./BracketLegend";
 
 interface BracketVisualizationProps {
   bracketData: Match[];
@@ -34,6 +34,7 @@ const BracketVisualization: React.FC<BracketVisualizationProps> = ({
           <div
             ref={containerRef}
             className="h-[calc(100%-2rem)] bg-white rounded-lg border border-gray-200 overflow-hidden"
+            style={{ backgroundColor: settings.canvasBackgroundColor }}
           >
             <BracketSVG
               svgRef={svgRef}
