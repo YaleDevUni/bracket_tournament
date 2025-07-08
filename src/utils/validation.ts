@@ -2,12 +2,12 @@
  * Validation utilities for bracket data
  */
 
-import type { Match } from '../types/bracket.types';
+import type { Match } from "../types/bracket.types";
 
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
   }
 }
 
@@ -26,12 +26,16 @@ export const validateMatch = (match: Match): match is Match => {
     throw new ValidationError('Each match must have a string "team2" property');
   }
   if (typeof match.details !== "string") {
-    throw new ValidationError('Each match must have a string "details" property');
+    throw new ValidationError(
+      'Each match must have a string "details" property'
+    );
   }
 
   if (match.children !== undefined) {
     if (!Array.isArray(match.children)) {
-      throw new ValidationError('The "children" property must be an array if present');
+      throw new ValidationError(
+        'The "children" property must be an array if present'
+      );
     }
 
     match.children.forEach((child: Match, index: number) => {
@@ -49,7 +53,7 @@ export const validateMatch = (match: Match): match is Match => {
 };
 
 export const validateBracketData = (data: string | Match[]): Match[] => {
-  const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+  const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
   if (!Array.isArray(parsedData)) {
     throw new ValidationError("The JSON must be an array of matches");

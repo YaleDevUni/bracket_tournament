@@ -11,7 +11,7 @@ import BracketVisualization from "./components/visualization/BracketVisualizatio
 import MatchDetailsModal from "./components/MatchDetailsModal";
 import { useBracketData } from "./hooks/useBracketData";
 import { useBracketSettings } from "./hooks/useBracketSettings";
-import type { Match } from "./types/bracket.types";
+import type { Match, BracketMode } from "./types/bracket.types";
 import "./index.css";
 
 const App: React.FC = () => {
@@ -23,6 +23,7 @@ const App: React.FC = () => {
     handleJsonUpdate,
     resetBracket,
     updateJsonInput,
+    switchBracketMode,
   } = useBracketData();
 
   const {
@@ -41,6 +42,7 @@ const App: React.FC = () => {
     updateNodeHeight,
     updateBackgroundColor,
     updateCanvasBackgroundColor,
+    updateBracketMode,
   } = useBracketSettings();
 
   const handleUpdateBracket = () => {
@@ -49,6 +51,11 @@ const App: React.FC = () => {
       alert(`Invalid JSON format: ${result.error}`);
     }
     return result;
+  };
+
+  const handleBracketModeChange = (mode: BracketMode) => {
+    updateBracketMode(mode);
+    switchBracketMode(mode);
   };
 
   // Sync JSON input when bracket data changes
@@ -79,6 +86,7 @@ const App: React.FC = () => {
               onNodeHeightChange={updateNodeHeight}
               onBackgroundColorChange={updateBackgroundColor}
               onCanvasBackgroundColorChange={updateCanvasBackgroundColor}
+              onBracketModeChange={handleBracketModeChange}
             />
 
             <DataEditor

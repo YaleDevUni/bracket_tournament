@@ -2,15 +2,18 @@
  * Modal component for displaying match details
  */
 
-import React from 'react';
-import   type { Match } from '../types/bracket.types';
+import React from "react";
+import type { Match } from "../types/bracket.types";
 
 interface MatchDetailsModalProps {
   match: Match | null;
   onClose: () => void;
 }
 
-const MatchDetailsModal: React.FC<MatchDetailsModalProps> = ({ match, onClose }) => {
+const MatchDetailsModal: React.FC<MatchDetailsModalProps> = ({
+  match,
+  onClose,
+}) => {
   if (!match) return null;
 
   return (
@@ -18,9 +21,7 @@ const MatchDetailsModal: React.FC<MatchDetailsModalProps> = ({ match, onClose })
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Match Details
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-800">Match Details</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -45,9 +46,7 @@ const MatchDetailsModal: React.FC<MatchDetailsModalProps> = ({ match, onClose })
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-500">
-                  Round
-                </span>
+                <span className="text-sm font-medium text-gray-500">Round</span>
                 <span className="text-sm font-semibold text-gray-700">
                   {match.label || "N/A"}
                 </span>

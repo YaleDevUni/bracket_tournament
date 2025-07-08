@@ -23,26 +23,15 @@ export const createLinks = (
       if (roundedLinks) {
         return createRoundedPath(source, target, midY);
       } else {
-        return createHybridPath(source, target, midY);
+        return createRectPath(source, target, midY);
       }
     })
     .attr("fill", "none")
     .attr("stroke", "#872DE7")
-    .attr("stroke-width", 2);
+    .attr("stroke-width", 1);
 };
 
 const createRoundedPath = (
-  source: HierarchyNode,
-  target: HierarchyNode,
-  midY: number
-): string => {
-  return `M${source.y},${source.x} 
-            H${midY} 
-            V${target.x} 
-            H${target.y}`;
-};
-
-const createHybridPath = (
   source: HierarchyNode,
   target: HierarchyNode,
   midY: number
@@ -63,6 +52,17 @@ const createHybridPath = (
             Q${midY},${target.x} ${midY + finalRadius},${target.x} 
             H${target.y}`;
   }
+};
+
+const createRectPath = (
+  source: HierarchyNode,
+  target: HierarchyNode,
+  midY: number
+): string => {
+  return `M${source.y},${source.x} 
+            H${midY} 
+            V${target.x} 
+            H${target.y}`;
 };
 
 export const createNodes = (
@@ -349,7 +349,7 @@ export const createRoundLabels = (
     labelGroup
       .append("text")
       .attr("x", xPos)
-      .attr("y", bracketTopY - 40)
+      .attr("y", bracketTopY - 80)
       .attr("text-anchor", "middle")
       .attr("class", "text-sm font-bold fill-white")
       .text(roundLabels[index] || `Round ${rounds - index}`);

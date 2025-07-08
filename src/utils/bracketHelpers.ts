@@ -5,10 +5,9 @@
 import type { HierarchyNode, LabelOrder } from "../types/bracket.types";
 
 export const getLabelOrder = (): LabelOrder => ({
-  Final: 3,
-  "Semi-Finals": 2,
+  Final: 0,
   "Quarter-Finals": 1,
-  "Round 1": 0,
+  "Semi-Finals": 2,
 });
 
 export const truncateText = (text: string, maxLength: number = 10): string => {
@@ -27,16 +26,54 @@ export const sortRoundLabels = (
   labelOrder: LabelOrder
 ): string[] => {
   return labels.sort((a, b) => {
-    return (labelOrder[a] || 0) - (labelOrder[b] || 0);
+    return (labelOrder[b] || 0) - (labelOrder[a] || 0);
   });
 };
 
+/**
+ * Generate round labels based on depth and tournament type
+ */
+export const generateRoundLabels = (
+  totalRounds: number,
+  isDoubleElimination: boolean = false
+): string[] => {
+  const labels: string[] = [];
+  const tempLabels: string[] = [];
+  const effectiveRounds = isDoubleElimination ? totalRounds + 1 : totalRounds;
+
+  for (let depth = 0; depth < effectiveRounds; depth++) {
+    const roundFromEnd = effectiveRounds - depth;
+
+    if (roundFromEnd === 1) {
+      labels.push("Final");
+    } else if (roundFromEnd === 2) {
+      labels.push("Semi-Finals");
+    } else if (roundFromEnd === 3) {
+      labels.push("Quarter-Finals");
+    } else {
+      // For rounds before quarter-finals, use Round X
+      const roundNumber = roundFromEnd - 3;
+      tempLabels.push(`Round ${roundNumber}`);
+    }
+  }
+
+  labels.unshift(...tempLabels.reverse());
+
+  return labels;
+};
+
+/**
+ * Extract unique round labels from bracket nodes with new depth-based labeling
+ */
 export const extractUniqueRoundLabels = (
   nodes: HierarchyNode[],
-  rounds: number
+  rounds: number,
+  isDoubleElimination: boolean = false
 ): string[] => {
-  const labels = Array.from(
-    new Set(nodes.map((d) => d.data.label || `Round ${rounds - d.depth}`))
-  );
-  return sortRoundLabels(labels, getLabelOrder());
+  if (isDoubleElimination) {
+    return generateRoundLabels(rounds, false);
+  }
+
+  // For single elimination, use the regular depth-based labeling
+  return generateRoundLabels(rounds, false);
 };

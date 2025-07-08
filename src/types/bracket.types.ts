@@ -14,6 +14,12 @@ export interface Match {
   label?: string;
   children?: Match[];
 }
+export interface DoubleEliminationMatch extends Match {
+  isLoserBracket: boolean;
+  children?: DoubleEliminationMatch[];
+}
+
+export type BracketMode = "single" | "double";
 
 export interface BracketSettings {
   xSpacing: number;
@@ -30,6 +36,7 @@ export interface BracketSettings {
   nodeHeight: number;
   backgroundColor: string;
   canvasBackgroundColor: string;
+  bracketMode: BracketMode;
 }
 
 export interface HierarchyNode extends d3.HierarchyNode<Match> {

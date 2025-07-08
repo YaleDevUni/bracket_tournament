@@ -45,22 +45,17 @@ const adjustLeafNodeSpacing = (
     node.x = startY + index * ySpacing;
   });
 
-  // Now we need to adjust the positions of internal nodes to maintain proper tree structure
-  // We'll do this by recursively positioning internal nodes at the center of their children
   const adjustInternalNodes = (node: HierarchyNode): void => {
     if (node.children && node.children.length > 0) {
-      // First, recursively adjust all children
       node.children.forEach((child) =>
         adjustInternalNodes(child as HierarchyNode)
       );
 
-      // Then position this node at the center of its children
       const childXs = node.children.map((child) => (child as HierarchyNode).x);
       node.x = (Math.min(...childXs) + Math.max(...childXs)) / 2;
     }
   };
 
-  // Adjust all internal nodes starting from the root
   adjustInternalNodes(treeData);
 };
 
@@ -113,7 +108,11 @@ export const renderBracketTree = (
   createMatchTags(g, treeData, 10, settings.nodeWidth);
 
   const rounds = treeData.height + 1;
-  const roundLabels = extractUniqueRoundLabels(treeData.descendants(), rounds);
+  const roundLabels = extractUniqueRoundLabels(
+    treeData.descendants(),
+    rounds,
+    false
+  );
   createRoundLabels(g, treeData, roundLabels, rounds);
 
   // Initial zoom and position

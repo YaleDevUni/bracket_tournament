@@ -6,6 +6,7 @@ import React, { useEffect } from "react";
 import type { RefObject } from "react";
 import type { Match, BracketSettings } from "../../types/bracket.types";
 import { renderBracketTree } from "../../services/d3RenderService";
+import { renderDoubleEliminationBracket } from "../../services/doubleEliminationRenderer";
 
 interface BracketSVGProps {
   svgRef: RefObject<SVGSVGElement | null>;
@@ -25,13 +26,22 @@ const BracketSVG: React.FC<BracketSVGProps> = ({
   useEffect(() => {
     if (!svgRef.current || !containerRef.current || !bracketData.length) return;
 
-    const cleanup = renderBracketTree(
-      svgRef.current,
-      containerRef.current,
-      bracketData,
-      settings,
-      onMatchSelect
-    );
+    const cleanup =
+      settings.bracketMode === "double"
+        ? renderDoubleEliminationBracket(
+            svgRef.current,
+            containerRef.current,
+            bracketData,
+            settings,
+            onMatchSelect
+          )
+        : renderBracketTree(
+            svgRef.current,
+            containerRef.current,
+            bracketData,
+            settings,
+            onMatchSelect
+          );
 
     return cleanup;
   }, [bracketData, settings, onMatchSelect]);

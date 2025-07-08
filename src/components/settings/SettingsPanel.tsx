@@ -3,9 +3,10 @@
  */
 
 import React from "react";
-import type { BracketSettings } from "../../types/bracket.types";
+import type { BracketSettings, BracketMode } from "../../types/bracket.types";
 import SpacingControl from "./SpacingControl";
 import ToggleSwitch from "./ToggleSwitch";
+import BracketModeToggle from "./BracketModeToggle";
 
 interface SettingsPanelProps {
   settings: BracketSettings;
@@ -23,6 +24,7 @@ interface SettingsPanelProps {
   onNodeHeightChange: (value: number) => void;
   onBackgroundColorChange: (value: string) => void;
   onCanvasBackgroundColorChange: (value: string) => void;
+  onBracketModeChange: (value: BracketMode) => void;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -41,6 +43,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onNodeHeightChange,
   onBackgroundColorChange,
   onCanvasBackgroundColorChange,
+  onBracketModeChange,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -48,6 +51,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         <h2 className="text-lg font-semibold text-white">Bracket Settings</h2>
       </div>
       <div className="p-4">
+        <div className="mb-4">
+          <BracketModeToggle
+            currentMode={settings.bracketMode}
+            onModeChange={onBracketModeChange}
+          />
+        </div>
+
         <div className="flex items-center gap-4 mb-4">
           <SpacingControl
             label="X Spacing"

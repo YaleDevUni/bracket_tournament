@@ -3,7 +3,7 @@
  */
 
 import { useState } from "react";
-import type { BracketSettings } from "../types/bracket.types";
+import type { BracketSettings, BracketMode } from "../types/bracket.types";
 
 const DEFAULT_SETTINGS: BracketSettings = {
   xSpacing: 150,
@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS: BracketSettings = {
   nodeHeight: 25,
   backgroundColor: "#191919",
   canvasBackgroundColor: "#191919",
+  bracketMode: "single",
 };
 
 export const useBracketSettings = () => {
@@ -81,6 +82,10 @@ export const useBracketSettings = () => {
     setSettings((prev) => ({ ...prev, canvasBackgroundColor: value }));
   };
 
+  const updateBracketMode = (value: BracketMode) => {
+    setSettings((prev) => ({ ...prev, bracketMode: value }));
+  };
+
   return {
     settings,
     updateXSpacing,
@@ -97,5 +102,6 @@ export const useBracketSettings = () => {
     updateNodeHeight,
     updateBackgroundColor,
     updateCanvasBackgroundColor,
+    updateBracketMode,
   };
 };

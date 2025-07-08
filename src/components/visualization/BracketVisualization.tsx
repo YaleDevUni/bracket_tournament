@@ -30,7 +30,7 @@ const BracketVisualization: React.FC<BracketVisualizationProps> = ({
           </h2>
         </div>
         <div className="p-4 h-[calc(100%-3.5rem)]">
-          <BracketLegend />
+          <BracketLegend bracketMode={settings.bracketMode} />
           <div
             ref={containerRef}
             className="h-[calc(100%-2rem)] bg-white rounded-lg border border-gray-200 overflow-hidden"
