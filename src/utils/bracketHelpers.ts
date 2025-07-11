@@ -39,7 +39,7 @@ export const generateRoundLabels = (
 ): string[] => {
   const labels: string[] = [];
   const tempLabels: string[] = [];
-  const effectiveRounds = isDoubleElimination ? totalRounds + 1 : totalRounds;
+  const effectiveRounds = isDoubleElimination ? totalRounds : totalRounds;
 
   for (let depth = 0; depth < effectiveRounds; depth++) {
     const roundFromEnd = effectiveRounds - depth;

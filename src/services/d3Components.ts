@@ -20,6 +20,13 @@ export const createLinks = (
       const source = d.source as HierarchyNode;
       const target = d.target as HierarchyNode;
       const midY = (source.y + target.y) / 2;
+      
+      // If source has only one child, use straight line
+      if (source.children && source.children.length === 1) {
+        return createStraightPath(source, target);
+      }
+      
+      // Otherwise use the normal logic
       if (roundedLinks) {
         return createRoundedPath(source, target, midY);
       } else {
@@ -29,6 +36,14 @@ export const createLinks = (
     .attr("fill", "none")
     .attr("stroke", "#872DE7")
     .attr("stroke-width", 1);
+};
+
+const createStraightPath = (
+  source: HierarchyNode,
+  target: HierarchyNode
+): string => {
+  // Direct straight line from source to target
+  return `M${source.y},${source.x} L${target.y},${target.x}`;
 };
 
 const createRoundedPath = (

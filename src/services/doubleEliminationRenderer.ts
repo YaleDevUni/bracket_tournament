@@ -74,7 +74,6 @@ const adjustDoubleEliminationLayout = (
   );
   if (loserLeafNodes.length > 0) {
     loserLeafNodes.sort((a, b) => a.x - b.x);
-    const loserHeight = (loserLeafNodes.length - 1) * ySpacing;
     const loserStartY = ySpacing * 2;
 
     loserLeafNodes.forEach((node, index) => {
@@ -99,6 +98,238 @@ const adjustInternalNodes = (nodes: HierarchyNode[]): void => {
       node.x = (Math.min(...childXs) + Math.max(...childXs)) / 2;
     }
   });
+};
+
+/**
+ * Detaches loser bracket nodes and creates a separate bracket structure
+ */
+const detachAndRenderLoserBracket = (
+  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  treeData: HierarchyNode,
+  onMatchSelect: (match: Match) => void,
+  settings: BracketSettings
+): HierarchyNode[] => {
+  const allNodes = treeData.descendants();
+  const { loserNodes } = separateWinnerAndLoserBrackets(allNodes);
+
+  if (loserNodes.length === 0) {
+    return [];
+  }
+
+  // Create a separate hierarchy for loser bracket
+  const loserMatches = loserNodes.map((node) => node.data);
+
+  // Find the root of loser bracket (node with no parent in loser bracket)
+  const loserRoot = loserMatches.find((match) => {
+    const parentIsLoser = loserMatches.some(
+      (m) => m.children && m.children.some((child) => child.id === match.id)
+    );
+    return !parentIsLoser;
+  });
+
+  if (!loserRoot) {
+    return [];
+  }
+
+  // Create separate hierarchy for loser bracket
+  const loserHierarchy = d3.hierarchy(loserRoot, (d: Match) => d.children);
+  const loserTreeLayout = d3
+    .tree<Match>()
+    .nodeSize([settings.ySpacing, settings.xSpacing]);
+  const loserTreeData = loserTreeLayout(loserHierarchy) as HierarchyNode;
+
+  // Position loser bracket in bottom half
+  const loserLeafNodes = loserTreeData
+    .descendants()
+    .filter((d) => !d.children || d.children.length === 0);
+
+  if (loserLeafNodes.length > 0) {
+    loserLeafNodes.sort((a, b) => a.x - b.x);
+    const loserStartY = settings.ySpacing * 2;
+
+    loserLeafNodes.forEach((node, index) => {
+      node.x = loserStartY + index * settings.ySpacing;
+    });
+
+    // Adjust internal loser nodes
+    adjustInternalNodes(loserTreeData.descendants());
+  }
+
+  // Flip coordinates for left-to-right layout
+  flipCoordinates(loserTreeData.descendants());
+
+  // Create loser bracket group and render
+  const loserGroup = g.append("g").attr("class", "loser-bracket");
+
+  // Render loser bracket components
+  createLinks(loserGroup, loserTreeData, settings.roundedLinks);
+  createNodes(
+    loserGroup,
+    loserTreeData,
+    onMatchSelect,
+    settings.nodeGap,
+    "#B91C1C", // Red background for loser bracket
+    "#DC2626", // Red border for loser bracket
+    settings.loserBackgroundColor,
+    settings.loserBorderColor,
+    settings.borderWidth,
+    settings.cornerRadius,
+    settings.nodeWidth,
+    settings.nodeHeight,
+    settings.backgroundColor
+  );
+  createMatchTags(loserGroup, loserTreeData, 10, settings.nodeWidth);
+
+  // Add loser bracket label
+  const loserNodes_positioned = loserTreeData.descendants();
+  if (loserNodes_positioned.length > 0) {
+    const loserMinX = Math.min(...loserNodes_positioned.map((d) => d.x));
+    const loserLeftY = Math.min(...loserNodes_positioned.map((d) => d.y));
+
+    loserGroup
+      .append("text")
+      .attr("x", loserLeftY - 20)
+      .attr("y", loserMinX - 40)
+      .attr("text-anchor", "middle")
+      .attr("class", "text-lg font-bold fill-red-400")
+      .text("Loser Bracket");
+  }
+
+  return loserTreeData.descendants();
+};
+
+/**
+ * Recursively filters out loser bracket nodes from a match structure
+ */
+const filterLoserBracketNodes = (match: Match): Match | null => {
+  const doubleElimMatch = match as DoubleEliminationMatch;
+
+  // If this is a loser bracket match, exclude it
+  if (doubleElimMatch.isLoserBracket) {
+    return null;
+  }
+
+  // Create a copy of the match
+  const filteredMatch: Match = {
+    ...match,
+    children: [],
+  };
+
+  // Recursively filter children
+  if (match.children && match.children.length > 0) {
+    const filteredChildren = match.children
+      .map((child) => filterLoserBracketNodes(child))
+      .filter((child) => child !== null) as Match[];
+
+    filteredMatch.children = filteredChildren;
+  }
+
+  return filteredMatch;
+};
+
+/**
+ * Creates a proper d3 hierarchy for winner bracket nodes (loser bracket completely removed)
+ */
+const createWinnerBracketHierarchy = (
+  treeData: HierarchyNode,
+  settings: BracketSettings
+): HierarchyNode | null => {
+  const rootMatch = treeData.data;
+
+  // Filter out all loser bracket nodes from the entire structure
+  const winnerOnlyRoot = filterLoserBracketNodes(rootMatch);
+
+  if (!winnerOnlyRoot) {
+    return null;
+  }
+
+  // Create proper hierarchy for winner bracket only
+  const winnerHierarchy = d3.hierarchy(
+    winnerOnlyRoot,
+    (d: Match) => d.children
+  );
+  const winnerTreeLayout = d3
+    .tree<Match>()
+    .nodeSize([settings.ySpacing, settings.xSpacing]);
+  const winnerTreeData = winnerTreeLayout(winnerHierarchy) as HierarchyNode;
+
+  // Position winner bracket in top half
+  const winnerLeafNodes = winnerTreeData
+    .descendants()
+    .filter((d) => !d.children || d.children.length === 0);
+
+  if (winnerLeafNodes.length > 0) {
+    winnerLeafNodes.sort((a, b) => a.x - b.x);
+    const winnerHeight = (winnerLeafNodes.length - 1) * settings.ySpacing;
+    const winnerStartY = -winnerHeight / 2 - settings.ySpacing * 2;
+
+    winnerLeafNodes.forEach((node, index) => {
+      node.x = winnerStartY + index * settings.ySpacing;
+    });
+
+    // Adjust internal nodes
+    adjustInternalNodes(winnerTreeData.descendants());
+  }
+
+  // Flip coordinates for left-to-right layout
+  flipCoordinates(winnerTreeData.descendants());
+
+  return winnerTreeData;
+};
+
+/**
+ * Renders winner bracket only (filtering out loser bracket nodes)
+ */
+const renderWinnerBracketOnly = (
+  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  treeData: HierarchyNode,
+  onMatchSelect: (match: Match) => void,
+  settings: BracketSettings
+): HierarchyNode[] => {
+  const winnerTreeData = createWinnerBracketHierarchy(treeData, settings);
+
+  if (!winnerTreeData) {
+    return [];
+  }
+
+  // Create winner bracket group
+  const winnerGroup = g.append("g").attr("class", "winner-bracket");
+
+  // Render winner bracket components
+  createLinks(winnerGroup, winnerTreeData, settings.roundedLinks);
+  createNodes(
+    winnerGroup,
+    winnerTreeData,
+    onMatchSelect,
+    settings.nodeGap,
+    settings.winnerBackgroundColor,
+    settings.winnerBorderColor,
+    settings.loserBackgroundColor,
+    settings.loserBorderColor,
+    settings.borderWidth,
+    settings.cornerRadius,
+    settings.nodeWidth,
+    settings.nodeHeight,
+    settings.backgroundColor
+  );
+  createMatchTags(winnerGroup, winnerTreeData, 10, settings.nodeWidth);
+
+  // Add winner bracket label
+  const winnerNodes = winnerTreeData.descendants();
+  if (winnerNodes.length > 0) {
+    const winnerMinX = Math.min(...winnerNodes.map((d) => d.x));
+    const winnerLeftY = Math.min(...winnerNodes.map((d) => d.y));
+
+    winnerGroup
+      .append("text")
+      .attr("x", winnerLeftY - 20)
+      .attr("y", winnerMinX - 40)
+      .attr("text-anchor", "middle")
+      .attr("class", "text-lg font-bold fill-white")
+      .text("Winner Bracket");
+  }
+
+  return winnerNodes;
 };
 
 /**
@@ -133,123 +364,42 @@ export const renderDoubleEliminationBracket = (
   // Setup zoom
   const zoom = setupZoom(svg, g);
 
-  // Render components
-  createLinks(g, treeData, settings.roundedLinks);
-  createDoubleEliminationNodes(g, treeData, onMatchSelect, settings);
-  createMatchTags(g, treeData, 10, settings.nodeWidth);
-
-  const rounds = treeData.height + 1;
-  const roundLabels = extractUniqueRoundLabels(
-    treeData.descendants(),
-    rounds,
-    true
+  // Render winner bracket only
+  const winnerNodes = renderWinnerBracketOnly(
+    g,
+    treeData,
+    onMatchSelect,
+    settings
   );
-  createRoundLabels(g, treeData, roundLabels, rounds);
 
-  // Add bracket section labels
-  addBracketSectionLabels(g, treeData.descendants(), settings);
+  // Detach and render loser bracket separately
+  const loserNodes = detachAndRenderLoserBracket(
+    g,
+    treeData,
+    onMatchSelect,
+    settings
+  );
+
+  // Combine all nodes for round labels and zoom
+  const combinedNodes = [...winnerNodes, ...loserNodes];
+
+  // Create round labels
+  const rounds = treeData.height ;
+  const roundLabels = extractUniqueRoundLabels(combinedNodes, rounds, true);
+  createRoundLabels(
+    g,
+    { descendants: () => combinedNodes } as HierarchyNode,
+    roundLabels,
+    rounds
+  );
 
   // Initial zoom and position
-  initializeZoomPosition(
-    svg,
-    zoom,
-    g,
-    containerElement,
-    treeData.descendants()
-  );
+  initializeZoomPosition(svg, zoom, g, containerElement, combinedNodes);
 
   // Cleanup function
   return () => {
     svg.selectAll("*").remove();
   };
-};
-
-/**
- * Creates nodes with different styling for winner and loser brackets
- */
-const createDoubleEliminationNodes = (
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
-  treeData: HierarchyNode,
-  onMatchSelect: (match: Match) => void,
-  settings: BracketSettings
-): void => {
-  const allNodes = treeData.descendants();
-  const { winnerNodes, loserNodes } = separateWinnerAndLoserBrackets(allNodes);
-
-  // Create winner bracket nodes with standard styling
-  if (winnerNodes.length > 0) {
-    const winnerGroup = g.append("g").attr("class", "winner-bracket");
-    createNodes(
-      winnerGroup,
-      { ...treeData, descendants: () => winnerNodes } as HierarchyNode,
-      onMatchSelect,
-      settings.nodeGap,
-      settings.winnerBackgroundColor,
-      settings.winnerBorderColor,
-      settings.loserBackgroundColor,
-      settings.loserBorderColor,
-      settings.borderWidth,
-      settings.cornerRadius,
-      settings.nodeWidth,
-      settings.nodeHeight,
-      settings.backgroundColor
-    );
-  }
-
-  // Create loser bracket nodes with different styling
-  if (loserNodes.length > 0) {
-    const loserGroup = g.append("g").attr("class", "loser-bracket");
-    createNodes(
-      loserGroup,
-      { ...treeData, descendants: () => loserNodes } as HierarchyNode,
-      onMatchSelect,
-      settings.nodeGap,
-      "#B91C1C", // Red background for loser bracket
-      "#DC2626", // Red border for loser bracket
-      settings.loserBackgroundColor,
-      settings.loserBorderColor,
-      settings.borderWidth,
-      settings.cornerRadius,
-      settings.nodeWidth,
-      settings.nodeHeight,
-      settings.backgroundColor
-    );
-  }
-};
-
-/**
- * Adds labels to distinguish winner and loser brackets
- */
-const addBracketSectionLabels = (
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
-  nodes: HierarchyNode[],
-  settings: BracketSettings
-): void => {
-  const { winnerNodes, loserNodes } = separateWinnerAndLoserBrackets(nodes);
-
-  if (winnerNodes.length > 0) {
-    const winnerMinX = Math.min(...winnerNodes.map((d) => d.x));
-    const winnerLeftY = Math.min(...winnerNodes.map((d) => d.y));
-
-    g.append("text")
-      .attr("x", winnerLeftY - 20)
-      .attr("y", winnerMinX - 40)
-      .attr("text-anchor", "middle")
-      .attr("class", "text-lg font-bold fill-white")
-      .text("Winner Bracket");
-  }
-
-  if (loserNodes.length > 0) {
-    const loserMinX = Math.min(...loserNodes.map((d) => d.x));
-    const loserLeftY = Math.min(...loserNodes.map((d) => d.y));
-
-    g.append("text")
-      .attr("x", loserLeftY - 20)
-      .attr("y", loserMinX - 40)
-      .attr("text-anchor", "middle")
-      .attr("class", "text-lg font-bold fill-red-400")
-      .text("Loser Bracket");
-  }
 };
 
 /**
